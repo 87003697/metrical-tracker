@@ -72,8 +72,9 @@ def update_cfg(cfg, cfg_file):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--cfg', type=str, help='Configuration file', default = './configs/acters/basic.yaml', required=False)
-    
+    parser.add_argument('--cfg', type=str, help='Configuration file', default = './configs/actors/basic.yml', required=False)
+    parser.add_argument('--input_video', type=str, help='The path to original video', required=True)
+    parser.add_argument('--output_dir', type=str, help='The path to the directory where the output will be saved', required=True)
 
     args = parser.parse_args()
     print(args, end='\n\n')
@@ -84,7 +85,12 @@ def parse_args():
         cfg = update_cfg(cfg, args.cfg)
         cfg.cfg_file = cfg_file
 
-    cfg.config_name = Path(args.cfg).stem
+    # cfg.config_name = Path(args.cfg).stem
+
+    # Update cfg with args
+    cfg.save_folder = args.output_dir
+    cfg.actor = args.input_video
+    cfg.config_name = Path(args.input_video).stem
 
     return cfg
 

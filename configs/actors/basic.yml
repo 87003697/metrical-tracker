@@ -6,4 +6,4 @@ optimize_shape: true
 optimize_jaw: true
 begin_frames: 1
 keyframes: [ 1 ]
-crop_image: false
+crop_image: true
