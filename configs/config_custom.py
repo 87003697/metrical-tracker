@@ -18,6 +18,7 @@ import argparse
 from pathlib import Path
 
 from yacs.config import CfgNode as CN
+import os
 
 cfg = CN()
 
@@ -90,7 +91,13 @@ def parse_args():
     # Update cfg with args
     cfg.save_folder = args.output_dir
     cfg.actor = args.input_video
-    cfg.config_name = Path(args.input_video).stem
+
+    # the name of the config file is the name of the video
+    for root, dirs, files in os.walk(args.input_video):
+        for file in files:
+            if file.endswith(".mp4"):
+                cfg.config_name = file.split('.')[0]
+                break
 
     return cfg
 

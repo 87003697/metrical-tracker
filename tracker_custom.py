@@ -101,7 +101,7 @@ class Tracker(object):
         self.mesh_folder = os.path.join(self.save_folder, self.actor_name, "mesh")
         self.depth_folder = os.path.join(self.save_folder, self.actor_name, "depth")
         self.create_output_folders()
-        self.writer = SummaryWriter(log_dir=self.save_folder + self.actor_name + '/logs')
+        self.writer = SummaryWriter(log_dir=os.path.join(self.save_folder, self.actor_name, 'logs'))
         self.setup_renderer()
 
     def get_image_size(self):
@@ -423,7 +423,7 @@ class Tracker(object):
             t.set_description(f'Loss for camera {loss:.4f}')
             self.frame += 1
             if k % 100 == 0 and k > 0:
-                self.checkpoint(batch, visualizations=[[View.GROUND_TRUTH, View.LANDMARKS, View.SHAPE_OVERLAY]], frame_dst='/camera', save=False, dump_directly=True)
+                self.checkpoint(batch, visualizations=[[View.GROUND_TRUTH, View.LANDMARKS, View.SHAPE_OVERLAY]], frame_dst='camera', save=False, dump_directly=True)
 
         self.frame = 0
 
@@ -469,7 +469,9 @@ class Tracker(object):
 
             best_loss = np.inf
 
-            for p in range(iters):
+            # changed by zhiyuan
+            for p in range(1):
+            # for p in range(iters): 
                 if p % self.config.raster_update == 0:
                     self.diff_renderer.rasterizer.reset()
                 losses = {}
@@ -550,13 +552,13 @@ class Tracker(object):
 
         for log in logs: logger.info(log)
 
-    def checkpoint(self, batch, visualizations=[[View.GROUND_TRUTH, View.LANDMARKS, View.HEATMAP], [View.COLOR_OVERLAY, View.SHAPE_OVERLAY, View.SHAPE]], frame_dst='/video', save=True, dump_directly=False):
+    def checkpoint(self, batch, visualizations=[[View.GROUND_TRUTH, View.LANDMARKS, View.HEATMAP], [View.COLOR_OVERLAY, View.SHAPE_OVERLAY, View.SHAPE]], frame_dst='video', save=True, dump_directly=False):
         batch = self.to_cuda(batch)
         images, landmarks, landmarks_dense, _, _ = self.parse_batch(batch)
 
         input_image = util.to_image(batch['image'].clone()[0].cpu().numpy())
 
-        savefolder = self.save_folder + self.actor_name + frame_dst
+        savefolder = os.path.join(self.save_folder, self.actor_name, frame_dst)
         Path(savefolder).mkdir(parents=True, exist_ok=True)
 
         with torch.no_grad():
@@ -699,7 +701,7 @@ class Tracker(object):
                 for k, level in enumerate(pyramid):
                     self.save_tensor(level[0], f"{self.pyramid_folder}/{k}.png")
             self.optimize_color(batch, pyramid, self.clone_params_color, weighting)
-            self.checkpoint(batch, visualizations=[[View.GROUND_TRUTH, View.COLOR_OVERLAY, View.LANDMARKS, View.SHAPE]], frame_dst='/initialization')
+            self.checkpoint(batch, visualizations=[[View.GROUND_TRUTH, View.COLOR_OVERLAY, View.LANDMARKS, View.SHAPE]], frame_dst='initialization')
             self.frame += 1
 
         self.save_canonical()
