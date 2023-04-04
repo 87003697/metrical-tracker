@@ -18,28 +18,55 @@ import cv2
 import numpy as np
 import torch
 
+# # this function is in the original repo, but the cropping result is not good for nerf-based models, therefore we use the one below
+# def get_bbox(image, lmks, bb_scale=2.0):
+#     h, w, c = image.shape
+#     lmks = lmks.astype(np.int32)
+#     x_min, x_max, y_min, y_max = np.min(lmks[:, 0]), np.max(lmks[:, 0]), np.min(lmks[:, 1]), np.max(lmks[:, 1])
+#     x_center, y_center = int((x_max + x_min) / 2.0), int((y_max + y_min) / 2.0)
+#     size = int(bb_scale * 2 * max(x_center - x_min, y_center - y_min))
+#     xb_min, xb_max, yb_min, yb_max = max(x_center - size // 2, 0), min(x_center + size // 2, w - 1), \
+#         max(y_center - size // 2, 0), min(y_center + size // 2, h - 1)
 
-def get_bbox(image, lmks, bb_scale=2.0):
-    h, w, c = image.shape
-    lmks = lmks.astype(np.int32)
-    x_min, x_max, y_min, y_max = np.min(lmks[:, 0]), np.max(lmks[:, 0]), np.min(lmks[:, 1]), np.max(lmks[:, 1])
-    x_center, y_center = int((x_max + x_min) / 2.0), int((y_max + y_min) / 2.0)
-    size = int(bb_scale * 2 * max(x_center - x_min, y_center - y_min))
-    xb_min, xb_max, yb_min, yb_max = max(x_center - size // 2, 0), min(x_center + size // 2, w - 1), \
-        max(y_center - size // 2, 0), min(y_center + size // 2, h - 1)
+#     yb_max = min(yb_max, h - 1)
+#     xb_max = min(xb_max, w - 1)
+#     yb_min = max(yb_min, 0)
+#     xb_min = max(xb_min, 0)
 
-    yb_max = min(yb_max, h - 1)
-    xb_max = min(xb_max, w - 1)
-    yb_min = max(yb_min, 0)
-    xb_min = max(xb_min, 0)
+#     if (xb_max - xb_min) % 2 != 0:
+#         xb_min += 1
 
-    if (xb_max - xb_min) % 2 != 0:
-        xb_min += 1
+#     if (yb_max - yb_min) % 2 != 0:
+#         yb_min += 1
 
-    if (yb_max - yb_min) % 2 != 0:
-        yb_min += 1
+#     return np.array([xb_min, xb_max, yb_min, yb_max])
 
-    return np.array([xb_min, xb_max, yb_min, yb_max])
+def get_bbox(image, bbox, increase_area = 0.2):
+    # this code is from https://github.com/AliaksandrSiarohin/video-preprocessing
+
+    left, top, right, bot = bbox
+    width = right - left
+    height = bot - top
+
+    # compute_aspect_preserced_bbox
+    width_increase = max(increase_area, ((1 + 2 * increase_area) * height - width) / (2 * width))
+    height_increase = max(increase_area, ((1 + 2 * increase_area) * width - height) / (2 * height))
+
+    left = int(left - width_increase * width)
+    top = int(top - height_increase * height)
+    right = int(right + width_increase * width)
+    bot = int(bot + height_increase * height)
+
+
+    left = max(0, left)
+    right = min(right, image.shape[1])
+    top = max(0, top)
+    bot = min(bot, image.shape[0])
+
+    return np.array([left, right, top, bot])
+
+
+
 
 
 def crop_image(image, x_min, y_min, x_max, y_max):

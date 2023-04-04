@@ -469,6 +469,8 @@ class Tracker(object):
 
             best_loss = np.inf
 
+            # # by Zhiyuan
+            # for p in range(1): 
             for p in range(iters): 
                 if p % self.config.raster_update == 0:
                     self.diff_renderer.rasterizer.reset()
@@ -696,8 +698,8 @@ class Tracker(object):
             if i == 0:
                 self.optimize_camera(batch)
                 weighting = lambda k: self.config.w_pho if k > 0 else self.config.w_pho / 32.0
-                for k, level in enumerate(pyramid):
-                    self.save_tensor(level[0], f"{self.pyramid_folder}/{k}.png")
+                # for k, level in enumerate(pyramid):
+                #     self.save_tensor(level[0], f"{self.pyramid_folder}/{k}.png")
             self.optimize_color(batch, pyramid, self.clone_params_color, weighting)
             self.checkpoint(batch, visualizations=[[View.GROUND_TRUTH, View.COLOR_OVERLAY, View.LANDMARKS, View.SHAPE]], frame_dst='initialization')
             self.frame += 1

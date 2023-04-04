@@ -35,7 +35,7 @@ cfg.config_name = ''
 cfg.kernel_size = 7
 cfg.sigma = 9.0
 cfg.keyframes = [0]
-cfg.bbox_scale = 2.5
+cfg.bbox_scale = 0.3 # this parameter is modified to be the same as the 'increase' in https://github.com/AliaksandrSiarohin/video-preprocessing
 cfg.fps = 25
 cfg.begin_frames = 0
 cfg.end_frames = 0
@@ -76,6 +76,7 @@ def parse_args():
     parser.add_argument('--cfg', type=str, help='Configuration file', default = './configs/actors/basic.yml', required=False)
     parser.add_argument('--input_video', type=str, help='The path to original video', required=True)
     parser.add_argument('--output_dir', type=str, help='The path to the directory where the output will be saved', required=True)
+    parser.add_argument('--crop', type=bool, help='Whether to crop the inputs', required=True)
 
     args = parser.parse_args()
     print(args, end='\n\n')
@@ -91,6 +92,7 @@ def parse_args():
     # Update cfg with args
     cfg.save_folder = args.output_dir
     cfg.actor = args.input_video
+    cfg.crop_image = args.crop
 
     # the name of the config file is the name of the video
     for root, dirs, files in os.walk(args.input_video):

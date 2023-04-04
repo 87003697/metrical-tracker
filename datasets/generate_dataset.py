@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 from face_detector import FaceDetector
 from image import crop_image_bbox, squarefiy, get_bbox
-
+from glob import glob
 
 class GeneratorDataset(Dataset, ABC):
     def __init__(self, source, config):
@@ -28,7 +28,10 @@ class GeneratorDataset(Dataset, ABC):
     def initialize(self):
         path = Path(self.source, 'source')
         if not path.exists() or len(os.listdir(str(path))) == 0:
-            video_file = self.source / 'video.mp4'
+            # video_file = self.source / 'video.mp4'
+            # find video file under the source directory using glob
+            video_file = glob(f'{self.source}/*.mp4')[0]
+
             if not os.path.exists(video_file):
                 logger.error(f'[ImagesDataset] Neither images nor a video was provided! Execution has stopped! {self.source}')
                 exit(1)
@@ -38,13 +41,26 @@ class GeneratorDataset(Dataset, ABC):
         self.images = sorted(glob(f'{self.source}/source/*.jpg') + glob(f'{self.source}/source/*.png'))
 
     def process_face(self, image):
-        lmks, scores, detected_faces = self.face_detector.get_landmarks_from_image(image, return_landmark_score=True, return_bboxes=True)
+        # detect face and if CUDA OOM, try again
+        while True:
+            try:
+                lmks, scores, detected_faces = self.face_detector.get_landmarks_from_image(image, return_landmark_score=True, return_bboxes=True)
+                break
+            except RuntimeError as e:
+                if str(e).startswith('CUDA'):
+                    print("Warning: out of memory, sleep for 30s")
+                    import time; time.sleep(30)
+                else:
+                    print(e)
+                    break        
+
         if detected_faces is None:
             lmks = None
         else:
             lmks = lmks[0]
+            detected_faces = detected_faces[0][:-1]
         dense_lmks = self.face_detector_mediapipe.dense(image)
-        return lmks, dense_lmks
+        return lmks, dense_lmks, detected_faces
 
     def run(self):
         logger.info('Generating dataset...')
@@ -54,6 +70,7 @@ class GeneratorDataset(Dataset, ABC):
         if os.path.exists(bbox_path):
             bbox = torch.load(bbox_path)
 
+        prev_bbox = None # in case the face is not detected in the current frame, use the bbox from the previous frame
         for imagepath in tqdm(self.images):
             lmk_path = imagepath.replace('source', 'kpt').replace('png', 'npy').replace('jpg', 'npy')
             lmk_path_dense = imagepath.replace('source', 'kpt_dense').replace('png', 'npy').replace('jpg', 'npy')
@@ -63,18 +80,22 @@ class GeneratorDataset(Dataset, ABC):
                 h, w, c = image.shape
 
                 if bbox is None and self.config.crop_image:
-                    lmk, _ = self.process_face(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))  # estimate initial bbox
-                    bbox = get_bbox(image, lmk, bb_scale=self.config.bbox_scale)
-                    torch.save(bbox, bbox_path)
+                    lmk, _, bbox = self.process_face(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))  # estimate initial bbox
+                    if bbox is None:
+                        bbox = prev_bbox
+                    else:
+                        bbox = get_bbox(image, bbox, self.config.bbox_scale)
+                        torch.save(bbox, bbox_path)
 
                 if self.config.crop_image:
                     image = crop_image_bbox(image, bbox)
+                    prev_bbox = bbox # the bbox is saved in case the face is not detected in the future frame
                     if self.config.image_size[0] == self.config.image_size[1]:
                         image = squarefiy(image, size=self.config.image_size[0])
                 else:
                     image = cv2.resize(image, (self.config.image_size[1], self.config.image_size[0]), interpolation=cv2.INTER_CUBIC)
 
-                lmk, dense_lmk = self.process_face(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+                lmk, dense_lmk, _ = self.process_face(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
 
                 if lmk is None:
                     logger.info(f'Empty face_alignment lmks for path: ' + imagepath)
