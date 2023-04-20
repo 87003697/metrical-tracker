@@ -469,7 +469,7 @@ class Tracker(object):
 
             best_loss = np.inf
 
-            # # by Zhiyuan
+            # by Zhiyuan
             # for p in range(1): 
             for p in range(iters): 
                 if p % self.config.raster_update == 0:

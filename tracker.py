@@ -466,7 +466,9 @@ class Tracker(object):
 
             best_loss = np.inf
 
-            for p in range(iters):
+            # for p in range(iters):
+            # modified by Zhiyuan
+            for p in range(1):
                 if p % self.config.raster_update == 0:
                     self.diff_renderer.rasterizer.reset()
                 losses = {}

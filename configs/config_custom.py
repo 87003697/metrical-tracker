@@ -98,7 +98,7 @@ def parse_args():
     for root, dirs, files in os.walk(args.input_video):
         for file in files:
             if file.endswith(".mp4"):
-                cfg.config_name = file.split('.')[0]
+                cfg.config_name = os.path.splitext(file)[0]
                 break
 
     return cfg
