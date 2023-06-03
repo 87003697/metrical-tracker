@@ -9,12 +9,18 @@ read -p "Password (FLAME):" password
 username=$(urle $username)
 password=$(urle $password)
 
-echo -e "\n${COLOR}Downloading FLAME..."
+# echo -e "\n${COLOR}Downloading FLAME..."
+# mkdir -p data/FLAME2020/
+# wget --post-data "username=$username&password=$password" 'https://download.is.tue.mpg.de/download.php?domain=flame&sfile=FLAME2020.zip&resume=1' -O './FLAME2020.zip' --no-check-certificate --continue
+# unzip FLAME2020.zip -d data/FLAME2020/
+# rm -rf FLAME2020.zip
+
+echo -e "\n${COLOR}Copying FLAME..."
 mkdir -p data/FLAME2020/
-wget --post-data "username=$username&password=$password" 'https://download.is.tue.mpg.de/download.php?domain=flame&sfile=FLAME2020.zip&resume=1' -O './FLAME2020.zip' --no-check-certificate --continue
-unzip FLAME2020.zip -d data/FLAME2020/
-rm -rf FLAME2020.zip
+cp -r ../MICA/data/FLAME2020/* data/FLAME2020/
+
 mv data/FLAME2020/Readme.pdf data/FLAME2020/Readme_FLAME.pdf
+
 
 wget --post-data "username=$username&password=$password" 'https://download.is.tue.mpg.de/download.php?domain=flame&resume=1&sfile=TextureSpace.zip' -O './TextureSpace.zip' --no-check-certificate --continue
 unzip TextureSpace.zip -d data/FLAME2020/

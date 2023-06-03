@@ -48,6 +48,7 @@ from renderer import Renderer
 
 # addedy by me
 from argparse import ArgumentParser
+import time
 
 os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1"
 rank = 42
@@ -707,13 +708,28 @@ class Tracker(object):
         self.save_canonical()
 
     def run(self):
-        self.prepare_data()
-        if not self.load_checkpoint():
-            self.initialize_tracking()
-            self.frame = 0
 
-        self.optimize_video()
-        self.output_video()
+        while True:
+            try:
+
+                # main command
+                self.prepare_data()
+                if not self.load_checkpoint():
+                    self.initialize_tracking()
+                    self.frame = 0
+                self.optimize_video()
+
+                break
+            except RuntimeError as e:
+                if str(e).startswith('CUDA'):
+                    print("Warning: out of memory, sleep for 10s")
+                    time.sleep(10)
+                else:
+                    print(e)
+                    break        
+
+
+                self.output_video()
 
 
 if __name__ == '__main__':
